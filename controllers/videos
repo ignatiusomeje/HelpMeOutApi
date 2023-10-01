@@ -26,8 +26,8 @@ const videoUpload = async (req, res) => {
       payload: [],
     };
     const data = await readFileFunc();
-    if (!data.length) {
-      res.status(500).json({
+    if (!Array.isArray(data)) {
+      return res.status(500).json({
         status: 500,
         message: `Error generating ID`,
       });
