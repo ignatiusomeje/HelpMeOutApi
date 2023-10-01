@@ -4,22 +4,22 @@ const { default: mongoose } = require("mongoose");
 
 const createID = async (req, res) => {
   try {
-    const { mimeType } = req.body;
-    if (!mimeType) {
-      return res.status(400).json({
-        status: 400,
-        message: `mimeType of Video is needed`,
-      });
-    }
-    if (!mimeType.includes("video")) {
-      return res.status(400).json({
-        status: 400,
-        message: `mimeType must be a type video`,
-      });
-    }
+    // const { mimeType } = req.body;
+    // if (!mimeType) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: `mimeType of Video is needed`,
+    //   });
+    // }
+    // if (!mimeType.includes("video")) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: `mimeType must be a type video`,
+    //   });
+    // }
     const dataNeeded = {
       url: "",
-      mimeType,
+      // mimeType,
       transcription: "",
       payload: [],
     };
@@ -116,7 +116,8 @@ const playOneVideo = async (req, res) => {
 
 const saveOneVideo = async (req, res)=>{
   try {
-    
+    console.log(req.body)
+    console.log(req);
   } catch (error) {
     res.status(500).json({
       status: 500,

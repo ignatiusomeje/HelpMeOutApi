@@ -15,7 +15,7 @@ App.use(bodyParser.json())
 App.use(bodyParser.urlencoded({extended: true}))
 App.use(cors('*'));
 
-App.use('/api/v1', videoRoutes)
+App.use('/', videoRoutes)
 
 App.all('*', (req, res)=>{
   res.status(404).json({
