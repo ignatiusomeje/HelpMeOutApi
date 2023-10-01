@@ -1,8 +1,9 @@
-const {videoUpload, fetchOneVideo,playOneVideo} = require("./videos");
+const {saveOneVideo,createID, fetchOneVideo,playOneVideo} = require("./videos");
 
 module.exports = {
-  saveVideo: videoUpload,
   getVideo: fetchOneVideo,
   // getAllVideo: fetchAllVideo,
-  playVideo: playOneVideo
+  playVideo: playOneVideo,
+  saveVideo: saveOneVideo,
+  sendID: createID
 }

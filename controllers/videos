@@ -1,8 +1,8 @@
 const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
-const { readFileFunc, writeFileFunc } = require("../utility/read-write-file");
+const Video = require("../model/video");
+const { default: mongoose } = require("mongoose");
 
-const videoUpload = async (req, res) => {
+const createID = async (req, res) => {
   try {
     const { mimeType } = req.body;
     if (!mimeType) {
@@ -18,27 +18,18 @@ const videoUpload = async (req, res) => {
       });
     }
     const dataNeeded = {
-      id: uuidv4(),
-      name: `record-${new Date()}`,
       url: "",
       mimeType,
       transcription: "",
       payload: [],
     };
-    const data = await readFileFunc();
-    if (!Array.isArray(data)) {
-      return res.status(500).json({
-        status: 500,
-        message: `Error generating ID`,
-      });
-    }
-    const newData = [dataNeeded, ...data];
-    await writeFileFunc(newData);
+    const video = new Video(dataNeeded);
+    const newVideo = await video.save();
     return res.status(200).json({
       status: 200,
       message: `success`,
       data: {
-        id: dataNeeded.id,
+        id: newVideo.id,
       },
     });
   } catch (error) {
@@ -52,35 +43,27 @@ const videoUpload = async (req, res) => {
 const fetchOneVideo = async (req, res) => {
   try {
     const paramsId = req.params.id;
-    const data = await readFileFunc();
-    if (!data.length) {
-      res.status(500).json({
-        status: 500,
-        message: `Error Fetching Video with ID: ${id}`,
+    if (!mongoose.isValidObjectId(paramsId)) {
+      return res.status(400).json({
+        status: 400,
+        message: `Invalid ID sent`,
       });
     }
-    const videoNeeded = data.filter((video) => video.id === paramsId);
-    if (videoNeeded.length < 1) {
+    const video = await Video.findById(paramsId).select("-payload");
+    if (!video) {
       return res.status(404).json({
-        stats: 404,
-        message: `Video not Found`,
+        status: 404,
+        message: `Video Not Found`,
       });
     }
-    const { id, name, url, mimeType, transcription } = videoNeeded[0];
     return res.status(200).json({
       status: 200,
       message: "Success",
-      data: {
-        id,
-        name,
-        url,
-        mimeType,
-        transcription,
-      },
+      data: video,
     });
   } catch (error) {
     res.status(500).json({
-      stats: 500,
+      status: 500,
       message: `Error Fetching video: ${error?.message}`,
     });
   }
@@ -89,19 +72,24 @@ const fetchOneVideo = async (req, res) => {
 const playOneVideo = async (req, res) => {
   try {
     const paramsId = req.params.id;
-    const data = await readFileFunc();
-    if (!data.length) {
-      res.status(500).json({
-        status: 500,
-        message: `Error playing Video with ID: ${id}`,
+    if (!mongoose.isValidObjectId(paramsId)) {
+      return res.status(400).json({
+        status: 400,
+        message: `Invalid ID sent`,
       });
     }
-    const videoNeeded = data.filter((video) => video.id === paramsId);
+    const video = await Video.findById(paramsId).select("name mimeType");
+    if (!video) {
+      return res.status(404).json({
+        status: 404,
+        message: `Video Not Found`,
+      });
+    }
     let range = req.headers.range;
     if (!range) {
       range = "bytes=0";
     }
-    const videoPath = `./videos/${videoNeeded[0].name}`;
+    const videoPath = `./videos/${video.name}.${video.mimeType.split("/")[1]}`;
     const videoSize = fs.statSync(videoPath).size;
     // parse range
     // example: "byttes=32324-"
@@ -120,10 +108,21 @@ const playOneVideo = async (req, res) => {
     videoStream.pipe(res);
   } catch (error) {
     res.status(500).json({
-      stats: 500,
+      status: 500,
       message: `Error Playing video: ${error?.message}`,
     });
   }
 };
 
-module.exports = { videoUpload, fetchOneVideo, playOneVideo };
+const saveOneVideo = async (req, res)=>{
+  try {
+    
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      message: `Error Saving video: ${error?.message}`,
+    });
+  }
+}
+
+module.exports = {fetchOneVideo, playOneVideo, createID, saveOneVideo };

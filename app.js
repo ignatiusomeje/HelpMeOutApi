@@ -2,8 +2,12 @@ const bodyParser = require('body-parser');
 const cors = require('cors')
 const express = require('express');
 
-const {videoRoutes} = require('./routes')
+const {videoRoutes} = require('./routes');
+const { default: mongoose } = require('mongoose');
 
+// const connection = process.env.DB_CONNECTION || mongodb://localhost:27017
+
+mongoose.connect(process.env.DB_CONNECTION || "mongodb://127.0.0.1:27017/Videos", {useNewURLParser: true}).then(result => console.log('connected to the DB successfully')).catch(err => console.log(err))
 
 const App = express();
 
