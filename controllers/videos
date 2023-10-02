@@ -4,8 +4,6 @@ const Video = require("../model/video");
 const { default: mongoose } = require("mongoose");
 const { saveToFile, getBinaryData } = require("../helpers");
 
-process.env.BASE_URL = "http://localhost:5000";
-
 const createID = async (req, res) => {
   try {
     const dataNeeded = {
@@ -136,52 +134,28 @@ const saveOneVideo = async (req, res) => {
 
       await saveToFile(dataBuffer, paramsId);
       const completeChunk = req.headers.complete;
-      // if (completeChunk === true){
-      // 651ab728fa9355859395e914
-      if (true) {
+      if (completeChunk === true) {
         const binaryData = await getBinaryData(paramsId);
-        const bufferNeeded = Buffer.from(binaryData);
-        console.log(bufferNeeded)
+        const bufferNeeded = await Buffer.from(binaryData);
         if (Buffer.isBuffer(bufferNeeded)) {
-          // console.log(video)
-          console.log(video.name, video.mimeType.split("/")[1], "check here");
-          await asyncFs.writeFile( `./videos/${video.name}.webm`, bufferNeeded)
-          // let writeStream = await fs.createWriteStream(
-          //   `./videos/${video.name}.${video.mimeType.split("/")[1]}`
-          // );
-          // await writeStream.write(bufferNeeded, 'binary');
-          // await writeStream.end();
-          // fs.createWriteStream(
-          //   `./videos/${video.name}.${video.mimeType.split("/")[1]}`,
-          //   buffer,
-          //   async (err) => {
-          //     console.log(err)
-          //     if (err) {
-          //       return res.status(500).json({
-          //         status: 500,
-          //         message: `error saving Video: ${err?.message}`,
-          //       });
-          //     }
+          await asyncFs.writeFile(
+            `./videos/${video.name}.${video.mimeType.split("/")[1]}`,
+            bufferNeeded
+          );
           await video.set({
             url: `${process.env.BASE_URL}/videos/play/${paramsId}`,
           });
           await video.save();
-          // fs.unlink(`./videos/${paramsId}.json`, (err) => {
-          //   if (err) {
-          //     return res.status(500).json({
-          //       status: 500,
-          //       message: "error deleting data",
-          //     });
-          //   }
           return await res.status(200).json({
             status: 200,
             message: "Video Created",
             data: video,
           });
-          // });
-          // }
-          // );
         }
+        return res.status(500).json({
+          status: 500,
+          message: "Invalid Buffer",
+        });
       }
       res.status(200).json({
         status: 200,
