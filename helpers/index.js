@@ -3,7 +3,8 @@ const path = require("path");
 
 const folderName = path.join(__dirname, "dB");
 const { read, existsSync } = require("node:fs");
-const fs = require("fs").promises;
+const fs = require("fs");
+const asyncFs = require("fs").promises;
 
 // const readDataFromFile = async (id) => {
 //   try {
@@ -63,19 +64,21 @@ const fs = require("fs").promises;
 
 const saveToFile = async (data, id) => {
   try {
-    // let currentData = await fs.readdir("./dB");
     const folderExists = existsSync("./dB");
     if (!folderExists) {
       fs.mkdirSync("./dB");
     }
     const exists = existsSync(`./dB/${id}.json`);
     if (!exists) {
-      let saveData = JSON.stringify([data]);
-      return await fs.writeFile(`./dB/${id}.json`, saveData, "utf-8");
+      let init = [];
+      init.push(data);
+      let saveData = JSON.stringify(init);
+      let writeStream = await fs.createWriteStream(`./dB/${id}.txt`);
+      await writeStream.write(saveData, "utf-8");
+      return await writeStream.end();
     }
-    let newData = await fs.readFile(`./dB/${id}.json`, {
-      encoding: "utf-8",
-    });
+    let newData = await asyncFs.readFile(`./dB/${id}.txt`, "utf-8");
+
     let parsedData = JSON.parse(newData);
     if (parsedData.length < 1) {
       parsedData = [];
@@ -83,23 +86,31 @@ const saveToFile = async (data, id) => {
     parsedData.push(data);
 
     let saveToData = JSON.stringify(parsedData);
-
-    return await fs.writeFile(`./dB/${id}.json`, saveToData, "utf-8");
+    let writeStream = await fs.createWriteStream(`./dB/${id}.txt`);
+    await writeStream.write(saveToData, "utf-8");
+    await writeStream.end();
   } catch (error) {
     throw error;
   }
 };
 
 const getBinaryData = async (id) => {
-  let fileToRead = await fs.readFile(`./dB/${id}.json`, { encoding: "utf-8" });
+  // console.log(id, "inside get binary");
 
-  const parsedData = JSON.parse(fileToRead);
+  let fileToRead = await asyncFs.readFile(`./dB/${id}.txt`, "utf-8");
+  // await fs.createReadStream(`./dB/${id}.json`, {
+  //   encoding: "utf-8",
+  // });
+  // readFile()
+  // console.log(fileToRead, "fileto read");
+
+  let parsedData = JSON.parse(fileToRead);
   const extractedBuffArr = [];
-  parsedData.forEach((data) => {
-    for (const DataString of data.data) {
+  for (const dataNeeded of parsedData) {
+    for (const DataString in dataNeeded.data) {
       extractedBuffArr.push(DataString);
     }
-  });
+  }
   return extractedBuffArr;
 };
 
