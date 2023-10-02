@@ -1,25 +1,12 @@
 const fs = require("fs");
 const Video = require("../model/video");
 const { default: mongoose } = require("mongoose");
+const { saveToFile, getBinaryData } = require("../helpers");
 
 const createID = async (req, res) => {
   try {
-    // const { mimeType } = req.body;
-    // if (!mimeType) {
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: `mimeType of Video is needed`,
-    //   });
-    // }
-    // if (!mimeType.includes("video")) {
-    //   return res.status(400).json({
-    //     status: 400,
-    //     message: `mimeType must be a type video`,
-    //   });
-    // }
     const dataNeeded = {
       url: "",
-      // mimeType,
       transcription: "",
       payload: [],
     };
@@ -91,8 +78,6 @@ const playOneVideo = async (req, res) => {
     }
     const videoPath = `./videos/${video.name}.${video.mimeType.split("/")[1]}`;
     const videoSize = fs.statSync(videoPath).size;
-    // parse range
-    // example: "byttes=32324-"
     const CHUNK_SIZE = 10 ** 6; //1MB;
     const start = Number(range.replace(/\D/g, ""));
     const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
@@ -114,16 +99,73 @@ const playOneVideo = async (req, res) => {
   }
 };
 
-const saveOneVideo = async (req, res)=>{
+const saveOneVideo = async (req, res) => {
   try {
-    console.log(req.body)
-    // console.log(req);
+    const paramsId = req.params.id;
+    if (!mongoose.isValidObjectId(paramsId)) {
+      return res.status(400).json({
+        status: 400,
+        message: `Invalid ID sent`,
+      });
+    }
+
+    const video = await Video.findById(paramsId);
+    if (!video) {
+      return res.status(404).json({
+        status: 404,
+        message: `Video Not Found`,
+      });
+    }
+    if (video.mimeType === "") {
+      const mimeType = req.headers["content-type"];
+      await video.set({ mimeType: mimeType });
+      await video.save();
+    }
+
+    const chunks = [];
+    req.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    req.on("end", async () => {
+      const dataBuffer = Buffer.concat(chunks);
+
+      await saveToFile(dataBuffer, paramsId);
+      const completeChunk = req.headers("complete");
+      // if (completeChunk === true){
+      if (true) {
+        const binaryData = await getBinaryData(paramsId);
+        const buffer = Buffer.from(binaryData);
+        if (Buffer.isBuffer(buffer)){
+          fs.writeFile("./videos/vids.webm", buffer, async (err) => {
+            if (err) {
+              return res.status(500).json({
+                status: 500,
+                message: `error saving Video: ${err?.message}`,
+              });
+            }
+            await video.set({url: `${process.env.BASE_URL}/videos/play/${paramsId}`})
+            await video.save();
+            res.status(200).json({
+              status: 200,
+              message: "Video Created",
+              data: video
+            });
+          });
+
+        }
+      }
+      res.status(200).json({
+        status: 200,
+        message: "Success",
+      });
+    });
   } catch (error) {
     res.status(500).json({
       status: 500,
       message: `Error Saving video: ${error?.message}`,
     });
   }
-}
+};
 
-module.exports = {fetchOneVideo, playOneVideo, createID, saveOneVideo };
+module.exports = { fetchOneVideo, playOneVideo, createID, saveOneVideo };
